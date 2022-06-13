@@ -28,13 +28,13 @@ jobs:
           python-version: 3.9
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: environment.yml
+          environment-file: src/environment.yml
       - name: Run PyLint
         shell: bash -l {0}
-        run: pylint .
+        run: pylint src/
       - name: Run PyTest
         shell: bash -l {0}
-        run: pytest .
+        run: pytest src/
   format_checking:
     runs-on: ubuntu-latest
     steps:
