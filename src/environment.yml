@@ -1,0 +1,6 @@
+name: round10
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+prefix: /Users/franciscoutrera/opt/miniconda3/envs/round10
