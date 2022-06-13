@@ -1,0 +1,8 @@
+name: round10
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - pylint=2.12.2
+  - pytest=7.1.2
+prefix: /Users/franciscoutrera/opt/miniconda3/envs/round10
