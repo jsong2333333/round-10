@@ -1,0 +1,45 @@
+name: round 10 checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+defaults:
+  run:
+    working-directory: src
+
+jobs:
+  type_and_lint_checking:
+    name: check (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: src/environment.yml
+      - name: Run PyLint
+        shell: bash -l {0}
+        run: pylint ./src
+      - name: Run PyTest
+        shell: bash -l {0}
+        run: pytest src/
+  format_checking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: psf/black@stable
+        with:
+          version: "22.3.0"
