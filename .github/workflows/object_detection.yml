@@ -28,7 +28,7 @@ jobs:
           python-version: 3.9
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: ./src/environment.yml
+          environment-file: projects/object_detection/src/environment.yml
       - name: Run PyLint
         shell: bash -l {0}
         run: pylint ./src
