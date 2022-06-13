@@ -31,10 +31,10 @@ jobs:
           environment-file: src/object_detection/environment.yml
       - name: Run PyLint
         shell: bash -l {0}
-        run: pylint src/object_detection/
+        run: pylint ./src/object_detection/
       - name: Run PyTest
         shell: bash -l {0}
-        run: pytest src/object_detection/
+        run: pytest ./src/object_detection/
   format_checking:
     runs-on: ubuntu-latest
     steps:
