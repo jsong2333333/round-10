@@ -1,0 +1,5 @@
+projects/object_detection/models
+projects/object_detection/test_output
+projects/object_detection/src/models.py
+projects/object_detection/cat_label
+projects/object_detection/src/__pycache__

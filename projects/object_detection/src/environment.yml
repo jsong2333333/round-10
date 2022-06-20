@@ -5,4 +5,10 @@ dependencies:
   - python=3.9
   - pylint=2.12.2
   - pytest=7.1.2
-prefix: /Users/franciscoutrera/opt/miniconda3/envs/round10
+  - torchaudio
+  - torchvision
+  - pytorch
+  - cudatoolkit=11.3
+  - jsonschema
+  - scipy
+prefix: /home/eecs/jialin_song/anaconda3/envs/round10
