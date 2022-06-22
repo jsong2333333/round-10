@@ -1,8 +1,6 @@
 name: round10
 channels:
   - defaults
-  - conda-forge
-  - pytorch
 dependencies:
   - pylint=2.12.2
   - torchvision==0.12.0
@@ -64,4 +62,5 @@ dependencies:
   - decorator
   - wcwidth
   - ipykernel
+  - black
 prefix: /home/eecs/jialin_song/anaconda3/envs/round10
