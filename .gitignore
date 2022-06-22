@@ -3,3 +3,4 @@ projects/object_detection/test_output
 projects/object_detection/src/models.py
 projects/object_detection/cat_label
 projects/object_detection/src/__pycache__
+projects/object_detection/coco_clean_dataset

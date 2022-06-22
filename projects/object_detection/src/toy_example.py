@@ -5,10 +5,8 @@ import cv2
 import torchvision
 import json
 
-PREPROCESS_FILEPATH = '/scratch/jialin/round-10/projects/object_detection/models/id-000000' 
-# PREPROCESS_FILEPATH = '/scratch/data/TrojAI/round10test/id-000000'
-TEST_OUTPUT = '/scratch/jialin/round-10/projects/object_detection/test_output'
-
+FILEPATH = '/scratch/jialin/round-10/projects/object_detection/models/id-00000018' 
+TRIAL_OUTPUT = '/scratch/jialin/round-10/projects/object_detection/test_output/grad_trial_unconstrained'
 
 def prepare_boxes(anns, image_id):
     if len(anns) > 0:
@@ -119,52 +117,85 @@ def save_images_with_gradient(OUTPUT_DIR, example_outputs):
 
         cv2.imwrite(OUTPUT_DIR+'/'+str(ids[ind])+'.jpg', grad_img)
 
-PRESENT_OUTPUT = True
+
+def save_grad_and_output_images(img_output, grad_output, ind):
+    def process_image(output_data_from_model):
+        img = output_data_from_model.cpu().detach().permute(1, 2, 0).numpy()
+        img -= img.min()
+        img /= img.max()
+        img *= 255
+        img = img.astype(int)
+        return img
+
+    grad_image = process_image(grad_output)
+    image = process_image(img_output)
+    grad_output_filepath = os.path.join(TRIAL_OUTPUT, 'grad')
+    img_output_filepath = os.path.join(TRIAL_OUTPUT, 'image_output')
+    cv2.imwrite(grad_output_filepath+'/'+str(ind)+'.jpg', grad_image)
+    cv2.imwrite(img_output_filepath+'/'+str(ind)+'.jpg', image)
+
+
 cat_dict = get_class_id_to_name_dict()
-for model_ind in range(1):
-    # path_ind = ''
-    # POISONED_FLAG = False
-    # if model_ind < 10:
-    #     path_ind = '0' + str(model_ind)
-    # else:
-    #     path_ind = str(model_ind)
-    path_ind = '18'
-    PATH_WITH_ID = PREPROCESS_FILEPATH + path_ind
-    MODEL_PATH = os.path.join(PATH_WITH_ID, 'model.pt')
-    CLEAN_EXAMPLE_PATH = os.path.join(PATH_WITH_ID,'clean-example-data')
-    POISONED_EXAMPLE_PATH = os.path.join(PATH_WITH_ID,'poisoned-example-data')
-    if os.path.isdir(POISONED_EXAMPLE_PATH):
-        POISONED_FLAG = True
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # load model
-    test_model = torch.load(MODEL_PATH)
-    test_model.to(device)
-    test_model.eval()
+PATH_WITH_ID = FILEPATH
+MODEL_PATH = os.path.join(PATH_WITH_ID, 'model.pt')
+CLEAN_EXAMPLE_PATH = os.path.join(PATH_WITH_ID,'clean-example-data')
+POISONED_EXAMPLE_PATH = os.path.join(PATH_WITH_ID,'poisoned-example-data')
 
-    # get outputs from example images
-    clean_example_outputs = get_output_from_example_images(test_model, CLEAN_EXAMPLE_PATH, device)
-    if POISONED_FLAG:
-        poisoned_example_outputs = get_output_from_example_images(test_model, POISONED_EXAMPLE_PATH, device)
-    
-    if PRESENT_OUTPUT:
-        clean_output_path = os.path.join(TEST_OUTPUT, path_ind, 'clean-example-outputs')
-        if not os.path.exists(clean_output_path):
-            os.makedirs(clean_output_path)
-        get_output_images(clean_output_path, CLEAN_EXAMPLE_PATH, clean_example_outputs, 1)
-        if POISONED_FLAG:
-            poisoned_output_path = os.path.join(TEST_OUTPUT, path_ind, 'poisoned-example-outputs')
-            if not os.path.exists(poisoned_output_path):
-                os.makedirs(poisoned_output_path)
-            get_output_images(poisoned_output_path, POISONED_EXAMPLE_PATH, poisoned_example_outputs, 1)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    grad_output_path_clean = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'clean')
-    if not os.path.exists(grad_output_path_clean):
-        os.makedirs(grad_output_path_clean)
-    save_images_with_gradient(grad_output_path_clean, clean_example_outputs)
-    if POISONED_FLAG:
-        grad_output_path_poisoned = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'poisoned')
-        if not os.path.exists(grad_output_path_poisoned):
-            os.makedirs(grad_output_path_poisoned)
-        save_images_with_gradient(grad_output_path_poisoned, poisoned_example_outputs)
+# load model
+test_model = torch.load(MODEL_PATH)
+test_model.to(device)
+test_model.eval()
+
+# load image and target
+img_filepath = '/scratch/jialin/round-10/projects/object_detection/models/id-00000018/poisoned-example-data/37567.jpg'
+image_id = os.path.basename(img_filepath)
+image_id = int(image_id.replace('.jpg',''))
+img = cv2.imread(img_filepath, cv2.IMREAD_UNCHANGED)
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+with open(img_filepath.replace('.jpg', '.json')) as json_file:
+    annotations = json.load(json_file)
+
+# initialize
+img = torch.as_tensor(img).permute((2, 0, 1))
+img = torchvision.transforms.functional.convert_image_dtype(img, torch.float)
+img = img.to(device)
+img = img.requires_grad_()
+
+tgt = prepare_boxes(annotations, image_id)
+tgt = {k:v.to(device) for k, v in tgt.items()}
+
+delta = torch.zeros_like(img, dtype=torch.float, requires_grad=True).to(device)
+
+total_steps, EPSILON = 20, 0.2
+LOSS, DELTA_NORM = [], []
+
+for step in range(1, total_steps+1):
+    img = img + delta
+    img = img - img.min()
+    img = img / img.max()
+    img = img.requires_grad_()
+    if torch.all(img >= 0.) and torch.all(img <= 1.):
+        print('step: ', step)
+        img.retain_grad()
+        output = test_model([img], [tgt])
+        LOSS.append(output[0]['classification'])
+        output[0]['classification'].backward()
+
+        img_grad = img.grad
+        save_grad_and_output_images(img, img_grad, step)
+
+        delta = delta + img_grad*EPSILON*2.5/step/torch.linalg.norm(torch.linalg.norm(img_grad, dim=1, ord=2), ord=2)
+        DELTA_NORM.append(torch.linalg.norm(torch.linalg.norm(delta, dim=1, ord=2), ord=2))
+
+        test_model.zero_grad()
+        delta = delta.detach()
+        img = img.detach()
+    else:
+        break
+
+print('LOSS: ', LOSS)
+print('DELTA_NORM: ', DELTA_NORM)
