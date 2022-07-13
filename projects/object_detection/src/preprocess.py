@@ -128,7 +128,7 @@ for model_ind in range(1):
     #     path_ind = '0' + str(model_ind)
     # else:
     #     path_ind = str(model_ind)
-    path_ind = '18'
+    path_ind = '09'
     PATH_WITH_ID = PREPROCESS_FILEPATH + path_ind
     MODEL_PATH = os.path.join(PATH_WITH_ID, 'model.pt')
     CLEAN_EXAMPLE_PATH = os.path.join(PATH_WITH_ID,'clean-example-data')
@@ -157,14 +157,14 @@ for model_ind in range(1):
             poisoned_output_path = os.path.join(TEST_OUTPUT, path_ind, 'poisoned-example-outputs')
             if not os.path.exists(poisoned_output_path):
                 os.makedirs(poisoned_output_path)
-            get_output_images(poisoned_output_path, POISONED_EXAMPLE_PATH, poisoned_example_outputs, 1)
+            get_output_images(poisoned_output_path, POISONED_EXAMPLE_PATH, poisoned_example_outputs, 5)
 
-    grad_output_path_clean = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'clean')
-    if not os.path.exists(grad_output_path_clean):
-        os.makedirs(grad_output_path_clean)
-    save_images_with_gradient(grad_output_path_clean, clean_example_outputs)
-    if POISONED_FLAG:
-        grad_output_path_poisoned = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'poisoned')
-        if not os.path.exists(grad_output_path_poisoned):
-            os.makedirs(grad_output_path_poisoned)
-        save_images_with_gradient(grad_output_path_poisoned, poisoned_example_outputs)
+    # grad_output_path_clean = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'clean')
+    # if not os.path.exists(grad_output_path_clean):
+    #     os.makedirs(grad_output_path_clean)
+    # save_images_with_gradient(grad_output_path_clean, clean_example_outputs)
+    # if POISONED_FLAG:
+    #     grad_output_path_poisoned = os.path.join(TEST_OUTPUT, path_ind, 'grad-example-outputs', 'poisoned')
+    #     if not os.path.exists(grad_output_path_poisoned):
+    #         os.makedirs(grad_output_path_poisoned)
+    #     save_images_with_gradient(grad_output_path_poisoned, poisoned_example_outputs)

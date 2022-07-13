@@ -9,7 +9,7 @@ import load_dataset
 import polygon_trigger
 
 
-FILEPATH = '/scratch/jialin/round-10/projects/object_detection/models/id-00000018' 
+FILEPATH = '/scratch/jialin/round-10/projects/object_detection/models/id-00000009' 
 TRIAL_OUTPUT = '/scratch/jialin/round-10/projects/object_detection/test_output/toy_clean/unconstrained'
 TOY_OUTPUT = '/scratch/jialin/round-10/projects/object_detection/test_output/toy_clean'
 
@@ -123,86 +123,119 @@ def save_images_with_gradient(OUTPUT_DIR, example_outputs):
         cv2.imwrite(OUTPUT_DIR+'/'+str(ids[ind])+'.jpg', grad_img)
 
 
-def save_grad_and_output_images(img_output, grad_output, ind):
-    def process_image(output_data_from_model):
-        img = output_data_from_model.cpu().detach().permute(1, 2, 0).numpy()
-        img -= img.min()
-        img /= img.max()
-        img *= 255
-        img = img.astype(int)
-        return img
+def process_image(output_data_from_model):
+    img = output_data_from_model.cpu().detach().permute(1, 2, 0).numpy()
+    img -= img.min()
+    img /= img.max()
+    img *= 255
+    img = img.astype(int)
+    return img
 
-    grad_image = process_image(grad_output)
-    image = process_image(img_output)
-    grad_output_filepath = os.path.join(TRIAL_OUTPUT, 'grad')
+
+def process_image_without_normalize(output_data_from_model):
+    img = output_data_from_model.cpu().detach().permute(1, 2, 0).numpy()
+    # img -= img.min()
+    # img /= img.max()
+    # img *= 255
+    img = img.astype(int)
+    return img
+
+
+def save_grad_and_output_images(img_output, grad_output, ind):
+    if grad_output is not None:
+        # grad_image = process_image(grad_output)
+        grad_output_filepath = os.path.join(TRIAL_OUTPUT, 'grad')
+        cv2.imwrite(grad_output_filepath+'/'+str(ind)+'.jpg', np.asarray(torchvision.transforms.ToPILImage()(grad_output.cpu())))
+        # cv2.imwrite(grad_output_filepath+'/'+str(ind)+'.jpg', grad_image)
+    # image = process_image(img_output)
     img_output_filepath = os.path.join(TRIAL_OUTPUT, 'image_output')
-    cv2.imwrite(grad_output_filepath+'/'+str(ind)+'.jpg', grad_image)
-    cv2.imwrite(img_output_filepath+'/'+str(ind)+'.jpg', image)
+    cv2.imwrite(img_output_filepath+'/'+str(ind)+'.jpg', np.asarray(torchvision.transforms.ToPILImage()(img_output.cpu())))
+    # cv2.imwrite(img_output_filepath+'/'+str(ind)+'.jpg', image)
+
+
+def insert_trigger(image, trigger):
+    tri_w, tri_h = trigger.shape[1], trigger.shape[2]
+    tri_img = image[:,10:10+tri_w, 10:10+tri_h]
+    tri_mask = trigger != 0
+    tri_img[tri_mask] = trigger[tri_mask]
+    image[:,10:10+tri_w, 10:10+tri_h] = tri_img
+    return image
 
 
 cat_dict = get_class_id_to_name_dict()
 
 PATH_WITH_ID = FILEPATH
 MODEL_PATH = os.path.join(PATH_WITH_ID, 'model.pt')
-# TRIGGER_PATH = os.path.join(PATH_WITH_ID, 'trigger_0.png')
+TRIGGER_PATH = os.path.join(PATH_WITH_ID, 'trigger_0.png')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # load coco dataset - load a list of tuples [(tensor of image, annotations)]
-clean_images = load_dataset.filter_by_id([19])
-# trigger = np.ones(shape=(50, 50, 3))
+clean_images = load_dataset.filter_by_id([17], 30)
+trigger = np.zeros(shape=(50, 50, 3))
 # trigger = cv2.imread(TRIGGER_PATH, cv2.IMREAD_UNCHANGED)
 # trigger = cv2.cvtColor(trigger, cv2.COLOR_BGR2RGB)
 # trigger = cv2.resize(trigger, (50, 50))
-# trigger[trigger > 0] = 1
-# trigger = torch.as_tensor(trigger).permute((2, 0, 1))
-# tri_w, tri_h = trigger.shape[1], trigger.shape[2]
+
+trigger = torch.as_tensor(trigger).permute((2, 0, 1))
+trigger = torchvision.transforms.functional.convert_image_dtype(trigger, torch.float)
+cv2.imwrite(TRIAL_OUTPUT+'/'+'trigger_0.jpg', np.asarray(torchvision.transforms.ToPILImage()(trigger)))
+
 
 # load image and target
-img, tgt = clean_images[10]
-# img[:,10:10+tri_w, 10:10+tri_h] = trigger
-img = torchvision.transforms.functional.convert_image_dtype(img, torch.float)
-img = img.to(device)
-img = img.requires_grad_()
-tgt = prepare_boxes(tgt, tgt[0]['image_id'])
-tgt = {k:v.to(device) for k, v in tgt.items()}
+images, targets = [], []
+# ind = 1
+for img, tgt in clean_images:
+    img = insert_trigger(img, trigger)
+    img = img.to(device)
+    img = img.requires_grad_()
+    images.append(img)
+    tgt = prepare_boxes(tgt, tgt[0]['image_id'])
+    tgt = {k:v.to(device) for k, v in tgt.items()}
+    targets.append(tgt)
+    # ind += 1
 
 # load model
 test_model = torch.load(MODEL_PATH)
 test_model.to(device)
 test_model.eval()
 
-# initialize
-delta = torch.zeros_like(img, dtype=torch.float, requires_grad=True).to(device)
-# p_trigger = polygon_trigger.PolygonTrigger()
-# p_trigger
 
-total_steps, EPSILON = 20, 0.2
+total_steps, EPSILON = 25, 20
 LOSS, DELTA_NORM = [], []
+outputs = []
+
+img, tgt = images[-1], targets[-1]
 
 for step in range(1, total_steps+1):
-    img = img + delta
-    img = img - img.min()
-    img = img / img.max()
-    img = img.requires_grad_()
+    img = img.to(device).requires_grad_()
     if torch.all(img >= 0.) and torch.all(img <= 1.):
-        print('step: ', step)
         img.retain_grad()
         output = test_model([img], [tgt])
-        LOSS.append(output[0]['classification'])
+        print('step: ', step, 'loss: ', output[0]['classification'].item())
         output[0]['classification'].backward()
 
         img_grad = img.grad
         save_grad_and_output_images(img, img_grad, step)
 
-        delta = delta + img_grad*EPSILON*2.5/step/torch.linalg.norm(torch.linalg.norm(img_grad, dim=1, ord=2), ord=2)
-        DELTA_NORM.append(torch.linalg.norm(torch.linalg.norm(delta, dim=1, ord=2), ord=2))
+        trigger_grad = img_grad.cpu()
+        updates = []
+        for i in range(3):
+            # updates.append(trigger[i] + torch.mean(trigger_grad[i]/torch.linalg.norm(torch.linalg.norm(trigger_grad[i], dim=1, ord=2), ord=2))*EPSILON*2.5/step)
+            updates.append(trigger[i]+torch.mean(trigger_grad[i])*EPSILON*2.5/step)
+        trigger = torch.stack(updates)
 
         test_model.zero_grad()
-        delta = delta.detach()
-        img = img.detach()
+        img = img.detach().cpu()
+
+        img = insert_trigger(img, trigger)
+        img = img - img.min()
+        img = img / img.max()
+        cv2.imwrite(TRIAL_OUTPUT+'/'+'trigger_'+ str(step)+ '.jpg', np.asarray(torchvision.transforms.ToPILImage()(trigger)))
+        # outputs.append({'scores': output[1][0]['scores'][:10], 'labels': output[1][0]['labels'][:10], 'boxes': output[1][0]['boxes'][:10]})
     else:
         break
 
-print('LOSS: ', LOSS)
-print('DELTA_NORM: ', DELTA_NORM)
+# print(outputs)
+# print('LOSS: ', LOSS)
+# print('DELTA_NORM: ', DELTA_NORM)

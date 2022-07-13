@@ -1,0 +1,13 @@
+name: weight_analysis
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pytorch
+  - torchaudio
+  - cudatoolkit=11.3
+  - torchvision=0.12.0
+  - transformers
+  - scikit-learn
+prefix: /home/eecs/jialin_song/anaconda3/envs/weight_analysis
