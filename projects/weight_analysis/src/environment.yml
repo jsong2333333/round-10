@@ -1,5 +1,6 @@
 name: weight_analysis
 channels:
+  - pytorch
   - defaults
   - conda-forge
 dependencies:
@@ -10,4 +11,3 @@ dependencies:
   - torchvision=0.12.0
   - transformers
   - scikit-learn
-prefix: /home/eecs/jialin_song/anaconda3/envs/weight_analysis
