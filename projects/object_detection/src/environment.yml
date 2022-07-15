@@ -2,13 +2,65 @@ name: round10
 channels:
   - defaults
 dependencies:
-  - python=3.9
   - pylint=2.12.2
+  - torchvision==0.12.0
   - pytest=7.1.2
-  - torchaudio
-  - torchvision
-  - pytorch
-  - cudatoolkit=11.3
-  - jsonschema
   - scipy
+  - python=3.9
+  - pytorch
+  - torchaudio
+  - cudatoolkit=11.3
+  - opencv
+  - jsonschema
+  - libffi
+  - readline
+  - libgcc-ng
+  - matplotlib-inline
+  - tornado
+  - executing
+  - debugpy
+  - pickleshare
+  - jupyter_core
+  - pure_eval
+  - sqlite
+  - backcall
+  - ipython
+  - libzlib
+  - jupyter_client
+  - tk
+  - xz
+  - zlib
+  - ncurses
+  - parso
+  - ptyprocess
+  - python-dateutil
+  - llvm-openmp
+  - nest-asyncio
+  - _openmp_mutex
+  - ld_impl_linux-64
+  - openssl
+  - prompt-toolkit
+  - pyzmq
+  - six
+  - setuptools
+  - traitlets
+  - pip
+  - tzdata
+  - pygments
+  - pexpect
+  - asttokens
+  - certifi
+  - _libgcc_mutex
+  - ca-certificates
+  - stack_data
+  - jedi
+  - libsodium
+  - libstdcxx-ng
+  - zeromq
+  - wheel
+  - entrypoints
+  - decorator
+  - wcwidth
+  - ipykernel
+  - black
 prefix: /home/eecs/jialin_song/anaconda3/envs/round10

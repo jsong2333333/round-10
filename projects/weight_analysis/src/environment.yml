@@ -1,0 +1,14 @@
+name: weight_analysis
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pytorch
+  - torchaudio
+  - cudatoolkit=11.3
+  - torchvision=0.12.0
+  - transformers
+  - scikit-learn=1.1.1
+  - pandas

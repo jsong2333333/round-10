@@ -3,3 +3,10 @@ projects/object_detection/test_output
 projects/object_detection/src/models.py
 projects/object_detection/cat_label
 projects/object_detection/src/__pycache__
+projects/object_detection/coco_clean_dataset
+projects/object_detection/src/misclassification_poisoned_models_with_clean_coco.py
+projects/object_detection/src/polygon_trigger.py
+projects/object_detection/annotations
+projects/backdoor_eigenvalue_clean
+projects/weight_analysis/src/__pycache__
+projects/weight_analysis/src/models.py
