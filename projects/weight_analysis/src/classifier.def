@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: pytorch/pytorch:1.11.0-cuda11.3-cudnn8-runtime
+
+%files
+    ./classifier.py /
+    ./features.npy /
+    ./labels.npy /
+    ./models.py /
+    ./feature_extractor.py /
+    ./environment.yml /
+
+
+%post
+    apt-get update && apt-get install -y git 
+    apt-get install -y libenchant-dev
+    apt-get install libgomp1
+    apt-get install -y default-jre
+    export PATH="$PATH:/opt/conda/bin"
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> $SINGULARITY_ENVIRONMENT
+    echo "conda activate $(head -1 environment.yml | cut -d' ' -f2)" >> $SINGULARITY_ENVIRONMENT
+
+    /opt/conda/bin/conda env create -f /environment.yml
+    . /opt/conda/bin/activate weight_analysis
+
+%runscript
+    # exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"
+    exec python3 /classifier.py "$@"

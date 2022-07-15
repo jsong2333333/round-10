@@ -24,8 +24,8 @@ def bootstrap_performance(X, y, n=50, test_size=.2, eps=.01):
     return {'cross_entropy': all_cross_entropy, 
             'accuracy': all_accuracy}
 
-X = np.load('src/features.npy')
-y = np.load('src/labels.npy')
+X = np.load('features.npy')
+y = np.load('labels.npy')
 
 # performance = bootstrap_performance(X, y)
 # all_cross_entropy, all_accuracy = performance['cross_entropy'], performance['accuracy']
